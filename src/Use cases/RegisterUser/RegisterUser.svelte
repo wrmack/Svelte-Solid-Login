@@ -11,8 +11,9 @@
         window.location.protocol +
         "//" +
         window.location.host +
-        "/register/success";
+        "/regsuccess";
 	}
+
 
 </script>
 
@@ -199,5 +200,6 @@
 		<div class="actions">
 			<button class="btn-solid" on:click={handleClickNext()}>Next</button>
 		</div>
+		<a href="regsuccess"> </a>
 	</RegisterPanel>
 </GradientBackground>

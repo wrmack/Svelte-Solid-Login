@@ -42,6 +42,12 @@
         padding: 1.5em 0;
     }
 
+    .timer {
+        font-size: 24px;
+        color: rgb(153, 23, 40);
+        display: inline;
+    }
+
     .rocket {
         width: 250px;
         height: 250px;
@@ -59,6 +65,6 @@
     <h1>Success! Welcome to the decentralized web.</h1>
     <img src="rocket.svg" alt="rocket" class="rocket" />
     <span>We have emailed you more information about your new Solid Identity</span>
-    <span>We will redirect you to your POD in {timeLeft} seconds...</span>
+    <span>We will redirect you so that you can now login in <span class="timer"> {timeLeft} </span> seconds...</span>
 
 </GradientBackground>

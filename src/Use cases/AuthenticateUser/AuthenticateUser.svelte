@@ -25,12 +25,18 @@
 	}
 
 	async function handleFormSubmit() {
-		const providerUrl = selectedProvider.value;
+		let providerUrl;
+		if (useSelectionProvider) {
+			providerUrl = selectedProvider.value;
+		}
+		else {
+			providerUrl = document.getElementById('idp').value;
+		}
 		await auth.trackSession(session => {
 			if (!session) {
 				console.log('The user is not logged in');
-				const uri = window.location.origin;
-				auth.login(providerUrl, {callbackUri: uri});
+				const uri = window.location.origin + '/regsuccess';
+				auth.login(providerUrl, {uri, storage: localStorage});
 			}
 			else {
                 console.log(`The user is ${session.webId}`)
@@ -145,7 +151,7 @@
 					{#if useSelectionProvider}
 						<ProviderSelector on:message={handleProviderSelected}></ProviderSelector>
 					{:else}
-						<input type="text" name="idp" placeholder="WebID">
+						<input id="idp" type="text" name="idp" placeholder="WebID">
 					{/if}
 						<button type="button" class="link" on:click={toggleSelectionProvider} >{providerWebidText}</button>
 						<button type="submit" class="login" >Log In</button>
