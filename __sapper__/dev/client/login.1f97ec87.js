@@ -448,7 +448,7 @@ class ProviderSelector extends SvelteComponentDev {
 
 const file$2 = "src/Use cases/AuthenticateUser/AuthenticateUser.svelte";
 
-// (153:5) {:else}
+// (159:5) {:else}
 function create_else_block(ctx) {
 	var input;
 
@@ -459,7 +459,7 @@ function create_else_block(ctx) {
 		},
 
 		l: function claim(nodes) {
-			input = claim_element(nodes, "INPUT", { type: true, name: true, placeholder: true, class: true }, false);
+			input = claim_element(nodes, "INPUT", { id: true, type: true, name: true, placeholder: true, class: true }, false);
 			var input_nodes = children(input);
 
 			input_nodes.forEach(detach);
@@ -467,11 +467,12 @@ function create_else_block(ctx) {
 		},
 
 		h: function hydrate() {
+			input.id = "idp";
 			attr(input, "type", "text");
 			input.name = "idp";
 			input.placeholder = "WebID";
 			input.className = "svelte-1b9fj8z";
-			add_location(input, file$2, 153, 6, 3362);
+			add_location(input, file$2, 159, 6, 3532);
 		},
 
 		m: function mount(target, anchor) {
@@ -490,7 +491,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (151:5) {#if useSelectionProvider}
+// (157:5) {#if useSelectionProvider}
 function create_if_block(ctx) {
 	var current;
 
@@ -531,7 +532,7 @@ function create_if_block(ctx) {
 	};
 }
 
-// (143:1) <LoginPanel>
+// (149:1) <LoginPanel>
 function create_default_slot_1(ctx) {
 	var div2, div1, a0, t0, t1, a1, t2, t3, span1, span0, t4, t5, div0, form, current_block_type_index, if_block, t6, button0, t7, t8, button1, t9, current, dispose;
 
@@ -639,28 +640,28 @@ function create_default_slot_1(ctx) {
 		h: function hydrate() {
 			a0.className = "ids-link-filled ids-link-filled--primary";
 			a0.href = "/register";
-			add_location(a0, file$2, 145, 4, 2824);
+			add_location(a0, file$2, 151, 4, 2994);
 			a1.href = "https://solid.inrupt.com/get-a-solid-pod";
 			a1.rel = "noopener noreferrer";
 			a1.target = "_blank";
 			a1.className = "link";
-			add_location(a1, file$2, 146, 4, 2931);
+			add_location(a1, file$2, 152, 4, 3101);
 			span0.className = "svelte-1b9fj8z";
-			add_location(span0, file$2, 147, 30, 3097);
+			add_location(span0, file$2, 153, 30, 3267);
 			span1.className = "panel-title svelte-1b9fj8z";
-			add_location(span1, file$2, 147, 4, 3071);
+			add_location(span1, file$2, 153, 4, 3241);
 			button0.type = "button";
 			button0.className = "link svelte-1b9fj8z";
-			add_location(button0, file$2, 155, 6, 3430);
+			add_location(button0, file$2, 161, 6, 3609);
 			button1.type = "submit";
 			button1.className = "login svelte-1b9fj8z";
-			add_location(button1, file$2, 156, 6, 3536);
-			add_location(form, file$2, 149, 5, 3178);
+			add_location(button1, file$2, 162, 6, 3715);
+			add_location(form, file$2, 155, 5, 3348);
 			div0.className = "solid-provider-login-component";
-			add_location(div0, file$2, 148, 4, 3128);
-			add_location(div1, file$2, 144, 3, 2814);
+			add_location(div0, file$2, 154, 4, 3298);
+			add_location(div1, file$2, 150, 3, 2984);
 			div2.className = "panel-body svelte-1b9fj8z";
-			add_location(div2, file$2, 143, 2, 2786);
+			add_location(div2, file$2, 149, 2, 2956);
 
 			dispose = [
 				listen(button0, "click", ctx.toggleSelectionProvider),
@@ -743,7 +744,7 @@ function create_default_slot_1(ctx) {
 	};
 }
 
-// (141:0) <GradientBackground>
+// (147:0) <GradientBackground>
 function create_default_slot(ctx) {
 	var div, h2, t0, t1, current;
 
@@ -782,9 +783,9 @@ function create_default_slot(ctx) {
 
 		h: function hydrate() {
 			h2.className = "svelte-1b9fj8z";
-			add_location(h2, file$2, 141, 22, 2734);
+			add_location(h2, file$2, 147, 22, 2904);
 			div.className = "welcome svelte-1b9fj8z";
-			add_location(div, file$2, 141, 1, 2713);
+			add_location(div, file$2, 147, 1, 2883);
 		},
 
 		m: function mount(target, anchor) {
@@ -898,6 +899,12 @@ function instance$2($$self, $$props, $$invalidate) {
 	onMount(async () => {
 		auth = window.solid.auth;
 		console.log("auth2", auth);
+		await auth.trackSession(session => {
+			if (session) {
+                console.log(`The user is ${session.webId}`);
+				window.location = "/";
+			}
+		});
 	});
 
 	function toggleSelectionProvider() {
@@ -921,8 +928,8 @@ function instance$2($$self, $$props, $$invalidate) {
 		await auth.trackSession(session => {
 			if (!session) {
 				console.log('The user is not logged in');
-				const uri = window.location.origin;
-				auth.login(providerUrl, {callbackUri: uri});
+				const uri = window.location.origin + "/";
+				auth.login(providerUrl, {uri, storage: localStorage});
 			}
 			else {
                 console.log(`The user is ${session.webId}`);

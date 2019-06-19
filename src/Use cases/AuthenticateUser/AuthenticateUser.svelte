@@ -12,6 +12,12 @@
 	onMount(async () => {
 		auth = window.solid.auth;
 		console.log("auth2", auth);
+		await auth.trackSession(session => {
+			if (session) {
+                console.log(`The user is ${session.webId}`)
+				window.location = "/";
+			}
+		})
 	});
 
 	function toggleSelectionProvider() {
@@ -35,7 +41,7 @@
 		await auth.trackSession(session => {
 			if (!session) {
 				console.log('The user is not logged in');
-				const uri = window.location.origin + '/regsuccess';
+				const uri = window.location.origin + "/";
 				auth.login(providerUrl, {uri, storage: localStorage});
 			}
 			else {
@@ -45,7 +51,6 @@
 		})
 	}
 </script>
-
 
 <style>
 	input {

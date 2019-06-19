@@ -932,8 +932,8 @@ const components = [
 		css: []
 	},
 	{
-		js: () => import('./login.18e6dfcc.js'),
-		css: ["login.18e6dfcc.css","chunk.02f34370.css"]
+		js: () => import('./login.1f97ec87.js'),
+		css: ["login.1f97ec87.css","chunk.02f34370.css"]
 	}
 ];
 
