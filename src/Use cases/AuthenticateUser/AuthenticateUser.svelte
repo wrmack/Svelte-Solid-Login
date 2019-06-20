@@ -14,7 +14,7 @@
 		console.log("auth2", auth);
 		await auth.trackSession(session => {
 			if (session) {
-                console.log(`The user is ${session.webId}`)
+                console.log("The user is ", session.webId)
 				window.location = "/";
 			}
 		})
@@ -38,19 +38,22 @@
 		else {
 			providerUrl = document.getElementById('idp').value;
 		}
-		await auth.trackSession(session => {
-			if (!session) {
-				console.log('The user is not logged in');
-				const uri = window.location.origin + "/";
-				auth.login(providerUrl, {uri, storage: localStorage});
-			}
-			else {
-                console.log(`The user is ${session.webId}`)
-				window.location = "/";
-			}
-		})
+		const session = await solid.auth.currentSession();
+		if (!session) {
+			console.log('The user is not logged in');
+			const uri = window.origin + "/";
+			console.log("Type: ", typeof(uri));
+			console.log("uri: ", uri);
+			await auth.login(providerUrl, {callbackUri: uri, storage: localStorage});
+		}
+		else {
+			console.log("The user is ", session.webId)
+			window.location = "/";
+		}
+
 	}
 </script>
+
 
 <style>
 	input {
