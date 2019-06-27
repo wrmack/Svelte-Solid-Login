@@ -3,7 +3,10 @@
 
 This provides login and registration functions that are modelled on those in Solid [react-components](https://github.com/solid/react-components) but using the [Svelte](https://svelte.dev) framework.
 
-A live demo is here: [https://svelte-login.netlify.com](https://svelte-login.netlify.com).
+Live demos deployed to: 
+* Netlify: [https://svelte-login.netlify.com](https://svelte-login.netlify.com).
+* Google App Engine: [https://svelte-solid-login.appspot.com](https://svelte-solid-login.appspot.com)
+
 
 A Svelte app is built using [Sapper](https://sapper.svelte.dev) ([Github](https://github.com/sveltejs/sapper-template)).  It can be bundled using Rollup or webpack.  I have used Rollup.
 
