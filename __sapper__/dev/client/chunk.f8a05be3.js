@@ -1,5 +1,6 @@
 function noop() { }
 function assign(tar, src) {
+    // @ts-ignore
     for (const k in src)
         tar[k] = src[k];
     return tar;
@@ -151,19 +152,16 @@ function setContext(key, context) {
 }
 
 const dirty_components = [];
-const resolved_promise = Promise.resolve();
-let update_scheduled = false;
 const binding_callbacks = [];
 const render_callbacks = [];
 const flush_callbacks = [];
+const resolved_promise = Promise.resolve();
+let update_scheduled = false;
 function schedule_update() {
     if (!update_scheduled) {
         update_scheduled = true;
         resolved_promise.then(flush);
     }
-}
-function add_binding_callback(fn) {
-    binding_callbacks.push(fn);
 }
 function add_render_callback(fn) {
     render_callbacks.push(fn);
@@ -179,18 +177,19 @@ function flush() {
             update(component.$$);
         }
         while (binding_callbacks.length)
-            binding_callbacks.shift()();
+            binding_callbacks.pop()();
         // then, once components are updated, call
         // afterUpdate functions. This may cause
         // subsequent updates...
-        while (render_callbacks.length) {
-            const callback = render_callbacks.pop();
+        for (let i = 0; i < render_callbacks.length; i += 1) {
+            const callback = render_callbacks[i];
             if (!seen_callbacks.has(callback)) {
                 callback();
                 // ...so guard against infinite loops
                 seen_callbacks.add(callback);
             }
         }
+        render_callbacks.length = 0;
     } while (dirty_components.length);
     while (flush_callbacks.length) {
         flush_callbacks.pop()();
@@ -200,27 +199,51 @@ function flush() {
 function update($$) {
     if ($$.fragment) {
         $$.update($$.dirty);
-        run_all($$.before_render);
+        run_all($$.before_update);
         $$.fragment.p($$.dirty, $$.ctx);
         $$.dirty = null;
-        $$.after_render.forEach(add_render_callback);
+        $$.after_update.forEach(add_render_callback);
     }
 }
+const outroing = new Set();
 let outros;
 function group_outros() {
     outros = {
-        remaining: 0,
-        callbacks: []
+        r: 0,
+        c: [],
+        p: outros // parent group
     };
 }
 function check_outros() {
-    if (!outros.remaining) {
-        run_all(outros.callbacks);
+    if (!outros.r) {
+        run_all(outros.c);
+    }
+    outros = outros.p;
+}
+function transition_in(block, local) {
+    if (block && block.i) {
+        outroing.delete(block);
+        block.i(local);
     }
 }
-function on_outro(callback) {
-    outros.callbacks.push(callback);
+function transition_out(block, local, detach, callback) {
+    if (block && block.o) {
+        if (outroing.has(block))
+            return;
+        outroing.add(block);
+        outros.c.push(() => {
+            outroing.delete(block);
+            if (callback) {
+                if (detach)
+                    block.d(1);
+                callback();
+            }
+        });
+        block.o(local);
+    }
 }
+
+const globals = (typeof window !== 'undefined' ? window : global);
 
 function get_spread_update(levels, updates) {
     const update = {};
@@ -256,11 +279,9 @@ function get_spread_update(levels, updates) {
     return update;
 }
 function mount_component(component, target, anchor) {
-    const { fragment, on_mount, on_destroy, after_render } = component.$$;
+    const { fragment, on_mount, on_destroy, after_update } = component.$$;
     fragment.m(target, anchor);
-    // onMount happens after the initial afterUpdate. Because
-    // afterUpdate callbacks happen in reverse order (inner first)
-    // we schedule onMount callbacks before afterUpdate callbacks
+    // onMount happens before the initial afterUpdate
     add_render_callback(() => {
         const new_on_destroy = on_mount.map(run).filter(is_function);
         if (on_destroy) {
@@ -273,10 +294,10 @@ function mount_component(component, target, anchor) {
         }
         component.$$.on_mount = [];
     });
-    after_render.forEach(add_render_callback);
+    after_update.forEach(add_render_callback);
 }
-function destroy(component, detaching) {
-    if (component.$$) {
+function destroy_component(component, detaching) {
+    if (component.$$.fragment) {
         run_all(component.$$.on_destroy);
         component.$$.fragment.d(detaching);
         // TODO null out other refs, including component.$$ (but need to
@@ -293,7 +314,7 @@ function make_dirty(component, key) {
     }
     component.$$.dirty[key] = true;
 }
-function init(component, options, instance, create_fragment, not_equal$$1, prop_names) {
+function init(component, options, instance, create_fragment, not_equal, prop_names) {
     const parent_component = current_component;
     set_current_component(component);
     const props = options.props || {};
@@ -303,13 +324,13 @@ function init(component, options, instance, create_fragment, not_equal$$1, prop_
         // state
         props: prop_names,
         update: noop,
-        not_equal: not_equal$$1,
+        not_equal,
         bound: blank_object(),
         // lifecycle
         on_mount: [],
         on_destroy: [],
-        before_render: [],
-        after_render: [],
+        before_update: [],
+        after_update: [],
         context: new Map(parent_component ? parent_component.$$.context : []),
         // everything else
         callbacks: blank_object(),
@@ -318,7 +339,7 @@ function init(component, options, instance, create_fragment, not_equal$$1, prop_
     let ready = false;
     $$.ctx = instance
         ? instance(component, props, (key, value) => {
-            if ($$.ctx && not_equal$$1($$.ctx[key], $$.ctx[key] = value)) {
+            if ($$.ctx && not_equal($$.ctx[key], $$.ctx[key] = value)) {
                 if ($$.bound[key])
                     $$.bound[key](value);
                 if (ready)
@@ -328,17 +349,19 @@ function init(component, options, instance, create_fragment, not_equal$$1, prop_
         : props;
     $$.update();
     ready = true;
-    run_all($$.before_render);
+    run_all($$.before_update);
     $$.fragment = create_fragment($$.ctx);
     if (options.target) {
         if (options.hydrate) {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             $$.fragment.l(children(options.target));
         }
         else {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             $$.fragment.c();
         }
-        if (options.intro && component.$$.fragment.i)
-            component.$$.fragment.i();
+        if (options.intro)
+            transition_in(component.$$.fragment);
         mount_component(component, options.target, options.anchor);
         flush();
     }
@@ -346,7 +369,7 @@ function init(component, options, instance, create_fragment, not_equal$$1, prop_
 }
 class SvelteComponent {
     $destroy() {
-        destroy(this, true);
+        destroy_component(this, 1);
         this.$destroy = noop;
     }
     $on(type, callback) {
@@ -377,4 +400,4 @@ class SvelteComponentDev extends SvelteComponent {
     }
 }
 
-export { svg_element as A, attr as B, listen as C, add_binding_callback as D, run_all as E, createEventDispatcher as F, prevent_default as G, SvelteComponentDev as S, space as a, children as b, claim_element as c, claim_text as d, element as e, detach as f, add_location as g, insert as h, init as i, append as j, create_slot as k, get_slot_changes as l, mount_component as m, noop as n, get_slot_context as o, set_data as p, empty as q, assign as r, safe_not_equal as s, text as t, get_spread_update as u, setContext as v, on_outro as w, check_outros as x, group_outros as y, onMount as z };
+export { setContext as A, group_outros as B, check_outros as C, onMount as D, svg_element as E, listen as F, run_all as G, binding_callbacks as H, createEventDispatcher as I, prevent_default as J, SvelteComponentDev as S, space as a, children as b, claim_element as c, claim_text as d, element as e, detach as f, attr as g, add_location as h, init as i, insert as j, append as k, create_slot as l, mount_component as m, noop as n, get_slot_changes as o, get_slot_context as p, transition_in as q, transition_out as r, safe_not_equal as s, text as t, destroy_component as u, globals as v, set_data as w, empty as x, assign as y, get_spread_update as z };

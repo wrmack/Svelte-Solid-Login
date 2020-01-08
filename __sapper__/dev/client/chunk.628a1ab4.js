@@ -1,4 +1,4 @@
-import { s as safe_not_equal, n as noop } from './chunk.a7e37d11.js';
+import { s as safe_not_equal, n as noop } from './chunk.f8a05be3.js';
 
 /**
  * Create a `Writable` store that allows both updating and reading by subscription.
@@ -35,6 +35,7 @@ function writable(value, start = noop) {
             }
             if (subscribers.length === 0) {
                 stop();
+                stop = null;
             }
         };
     }
